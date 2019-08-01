@@ -1,55 +1,75 @@
 <!DOCTYPE html>
-<svg width="960" height="500"></svg>
-<script src="https://d3js.org/d3.v4.min.js"></script>
-<script>
+<html>
+  <head>
+    <title>Area Chart Example</title>
+    <link rel='stylesheet' href='css/bootstrap.min.css'>
+  </head>
+  <body>
+    <nav class='navbar navbar-default'></nav>
+    <svg width="600" height="400"></svg>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
 
-var svg = d3.select("svg"),
-    margin = {top: 20, right: 20, bottom: 30, left: 50},
-    width = +svg.attr("width") - margin.left - margin.right,
-    height = +svg.attr("height") - margin.top - margin.bottom,
-    g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    // This would normally be a separate JavaScript file for an actual project:
 
-var parseTime = d3.timeParse("%d-%b-%y");
+    var svg = d3.select("svg"),
+        margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom,
+        g = svg.append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-var x = d3.scaleTime()
-    .rangeRound([0, width]);
+    var parseTime = d3.timeParse("%d-%b-%y");
 
-var y = d3.scaleLinear()
-    .rangeRound([height, 0]);
+    var x = d3.scaleTime()
+        .rangeRound([0, width]);    // rangeRound method -> Any output from this scale rounds to nearest whole number
 
-var area = d3.area()
-    .x(function(d) { return x(d.date); })
-    .y1(function(d) { return y(d.close); });
+    var y = d3.scaleLinear()
+        .rangeRound([height, 0]);
 
-d3.tsv("data/data.tsv", function(d) {
-  d.date = parseTime(d.date);
-  d.close = +d.close;
-  return d;
-}, function(error, data) {
-  if (error) throw error;
+    var area = d3.area()            // PATH GENERATOR
+        .x(function(d) { return x(d.date); })
+        .y0(y(0))                                 // Y zero should line up with bottom of canvas always
+        .y1(function(d) { return y(d.close); });
 
-  x.domain(d3.extent(data, function(d) { return d.date; }));
-  y.domain([0, d3.max(data, function(d) { return d.close; })]);
-  area.y0(y(0));
+    d3.tsv("data/data.tsv", function(d) {   // load data from tab separated values file
+      d.date = parseTime(d.date);       // maps over our data as soon as its loaded
+      d.close = +d.close;
+      return d;
+    }, function(error, data) {      // passes it on, data is second position on arg list
+      if (error) throw error;
 
-  g.append("path")
-      .datum(data)
-      .attr("fill", "steelblue")
-      .attr("d", area);
+      x.domain(d3.extent(data, function(d) { return d.date; }));    // set domains as usual
+      y.domain([0, d3.max(data, function(d) { return d.close; })]);   // 0-largest y value
+      area.y0(y(0));    
 
-  g.append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
+      // g.append("path")
+      //     .datum(data)      // pass array of data to datum method
+      //     .attr("fill", "steelblue")
+      //     .attr("d", area);   // pass area generator to 'd' method WITHOUT an argument
+      //                         // d attribute tries to pass our data into the method we provide
+      //                         // useful for adding multiple area paths to the same visualization
+      //                         // provide it with an array of arrays
+      
+      g.append('path')
+        .attr('fill', 'steelblue')
+        .attr('d', area(data))   // you can also do it like this (prob simpler!)
 
-  g.append("g")
-      .call(d3.axisLeft(y))
-    .append("text")
-      .attr("fill", "#000")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-      .attr("dy", "0.71em")
-      .attr("text-anchor", "end")
-      .text("Price ($)");
-});
+      g.append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
 
-</script>
+      g.append("g")
+          .call(d3.axisLeft(y))
+        .append("text")
+          .attr("fill", "#000")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", "0.71em")
+          .attr("text-anchor", "end")
+          .text("Price ($)");
+    });
+
+    </script>
+  </body>
+</html>
